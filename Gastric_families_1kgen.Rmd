@@ -1,0 +1,59 @@
+---
+title: "Gastric_families_1kgen"
+author: "EF"
+date: "13 April 2016"
+output: html_document
+---
+# start_section
+ 
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clean up
+rm(list=ls())
+graphics.off()
+
+# Set root working folder
+library(knitr)
+library(plyr)
+library(dplyr)
+
+opts_knit$set(root.dir = "C:/data_local/IHCAP")
+setwd("C:/data_local/IHCAP")
+
+load("Gastric_families.RData")
+
+
+```
+
+#Load data
+```{r load data}
+kgen.gt <- read.table("C:/data_local/Control_data/1K_genomes/kgen_consq_filtered_20160404.csv", header=TRUE, row.names=1, quote="", sep=',')
+dim(kgen.gt)
+
+```
+
+#Select allele count from kgen and add to gastric
+```{r add allele count}
+kgen.AC <- subset(kgen.gt, select=c("CHROM", "POS","AC"))
+kgen.AC <- rename(kgen.AC, AC_kgen=AC)
+
+F1.kgen.gt <- merge(F1.merge, kgen.AC, by=c("CHROM", "POS"), all.x=TRUE)
+F2.kgen.gt <- merge(F2.merge, kgen.AC, by=c("CHROM", "POS"), all.x=TRUE)
+
+```
+
+#Select variants that are in less than 10 kgen samples
+```{r select rare variants}
+F1.kgen.gt$AC_kgen[is.na(F1.kgen.gt$AC_kgen)] <- 0
+F2.kgen.gt$AC_kgen[is.na(F2.kgen.gt$AC_kgen)] <- 0
+
+f1.rare <- F1.kgen.gt[F1.kgen.gt$AC_kgen <= 10,]
+f2.rare <- F2.kgen.gt[F2.kgen.gt$AC_kgen <= 10,]
+
+#Write to csv
+write.csv(f1.rare, file="IHCAP_gastric_st172_rare_20160413.csv")
+write.csv(f2.rare, file="IHCAP_gastric_st345_rare_20160413.csv")
+```

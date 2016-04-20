@@ -1,0 +1,68 @@
+---
+title: "Gastric_all_1kgen"
+author: "EF"
+date: "13 April 2016"
+output: html_document
+---
+# start_section
+  
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clean up
+rm(list=ls())
+graphics.off()
+
+# Set root working folder
+library(knitr)
+library(plyr)
+library(dplyr)
+
+opts_knit$set(root.dir = "C:/data_local/IHCAP")
+setwd("C:/data_local/IHCAP")
+
+#Load Rdata
+load("Gastric_fam_AC.RData")
+```
+
+#Select varaints with at least one variant in an affected individual
+```{r affected}
+aff.df <- subset(merged.df, select=c("PQ45_202.GT", "PQ45_203.GT", "PQ47_304.GT", "PQ48_401.GT", "ST172_302.GT", "ST230_304.GT", "ST256_301.GT", "ST257_201.GT", "ST257_202.GT", "ST275_GE0035.GT", "ST296_GE0204.GT", "ST345_303.GT", "ST358_301.GT", "ST368_301.GT", "ST440_403_D72330.GT"))
+merged.df$AC_affected <- rowSums(aff.df,na.rm = TRUE)
+
+gast.df <- merged.df[merged.df$AC_affected > 0,]
+```
+
+#Load data kgen
+```{r load data kgen}
+kgen.gt <- read.table("C:/data_local/Control_data/1K_genomes/kgen_consq_filtered_20160404.csv", header=TRUE, row.names=1, quote="", sep=',')
+dim(kgen.gt)
+
+```
+
+#Select allele count from kgen and add to gastric
+```{r add allele count}
+kgen.AC <- subset(kgen.gt, select=c("CHROM", "POS","AC"))
+kgen.AC <- rename(kgen.AC, AC_kgen=AC)
+
+gast.kgen.df <- merge(gast.df, kgen.AC, by=c("CHROM", "POS"), all.x=TRUE)
+
+rm(kgen.AC, kgen.gt,aff.df,gast.df,ihcap.gt.df,ihcap.vv.df, pass.df, merged.df)
+
+```
+
+#Select variants with AC<10 in kgen
+```{r rare variants}
+gast.kgen.df$AC_kgen[is.na(gast.kgen.df$AC_kgen)] <- 0
+
+
+gast.rare <- gast.kgen.df[gast.kgen.df$AC_kgen <= 10,]
+```
+
+```{r select from sift and polyphen}
+
+#Write to csv
+write.csv(gast.rare, file="IHCAP_gastric_all_rare_20160413.csv")
+```

@@ -1,0 +1,82 @@
+---
+title: "Gastric_families"
+author: "EF"
+date: "12 April 2016"
+output: html_document
+---
+# start_section
+ 
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clean up
+rm(list=ls())
+graphics.off()
+
+# Set root working folder
+library(knitr)
+library(plyr)
+library(dplyr)
+
+opts_knit$set(root.dir = "C:/data_local/IHCAP")
+setwd("C:/data_local/IHCAP")
+
+#load previous data
+load("Gastric_fam_AC.RData")
+
+```
+
+#Select families
+```{r select families}
+F1.gt <- subset(gast.gt.df, select=c("ST172_301.GT", "ST172_302.GT", "ST172_303.GT"))
+dim(F1.gt)
+
+F2.gt <- subset(gast.gt.df, select=c("ST345_301.GT", "ST345_302.GT", "ST345_303.GT"))
+dim(F2.gt)
+
+```
+
+#Select variants in family
+```{r Select variants}
+F1.aff.gt <- F1.gt[F1.gt$ST172_302.GT > 0,]
+F1.unaff.gt<- F1.aff.gt[F1.aff.gt$ST172_301.GT < 2 & F1.aff.gt$ST172_303.GT < 2,]
+F1.nona <- F1.unaff.gt[!is.na(F1.unaff.gt$ST172_302.GT),]
+dim(F1.nona)
+
+F2.aff.gt <- F2.gt[F2.gt$ST345_303.GT > 0,]
+F2.unaff.gt<- F2.aff.gt[F2.aff.gt$ST345_301.GT < 2 & F2.aff.gt$ST345_302.GT < 2,]
+F2.nona <- F2.unaff.gt[!is.na(F2.unaff.gt$ST345_303.GT),]
+dim(F2.nona)
+
+#Clean up
+rm(F1.aff.gt, F1.unaff.gt, F2.aff.gt, F2.unaff.gt, F1.gt, F2.gt)
+
+```
+
+#Create allele count
+```{r Create new allele count}
+F1.nona$AC_F1 = rowSums(F1.nona)
+
+F2.nona$AC_F2 = rowSums(F2.nona)
+
+#Select rows where affected is higher than unaffected
+F1.inaff.gt <- F1.nona[F1.nona$ST172_302.GT > F1.nona$ST172_301.GT & F1.nona$ST172_302.GT > F1.nona$ST172_303.GT,]
+F2.inaff.gt <- F2.nona[F2.nona$ST345_303.GT > F2.nona$ST345_301.GT & F2.nona$ST345_303.GT > F2.nona$ST345_302.GT,]
+rm(F1.nona, F2.nona)
+```
+
+#Merge with vep files
+```{r merge with vep}
+F1.merge <- merge(vv.hi.lof.df, F1.inaff.gt, by=0)
+dim(F1.merge)
+F2.merge <- merge(vv.hi.lof.df, F2.inaff.gt, by=0)
+dim(F2.merge)
+
+#Cleanup
+rm(F1.inaff.gt, F2.inaff.gt, gast.gt.df, ihcap.gt.df, ihcap.vv.df, merged.df, pass.df, vv.hi.lof.df, high_impact_lof)
+
+#Save workspace
+save.image(file="Gastric_families.RData")
+```

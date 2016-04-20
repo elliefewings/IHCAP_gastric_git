@@ -1,0 +1,90 @@
+---
+title: "Gastric_reformat"
+author: "EF"
+date: "12 April 2016"
+output: html_document
+---
+# start_section
+  
+```{r start_section}
+
+# Time stamp
+Sys.time()
+
+# Clean up
+rm(list=ls())
+graphics.off()
+
+# Set root working folder
+library(knitr)
+library(plyr)
+library(dplyr)
+
+opts_knit$set(root.dir = "C:/data_local/IHCAP")
+#setwd("C:/data_local/IHCAP")
+
+```
+
+#Load files
+```{r load files}
+ihcap.gt.df <- read.table("IHCAP_rerun20160218/ihcap_variantset_run2_filter17_02_16_GT_biallelic_add.txt", header=TRUE, sep="\t", row.names=1, quote="")
+dim(ihcap.gt.df)
+ihcap.vv.df <- read.table("IHCAP_rerun20160218/ihcap_variantset_run2_filter17_02_16_VV_biallelic.txt", header=TRUE, sep="\t", row.names=1, quote="")
+dim(ihcap.vv.df)
+
+gast.gt.df <- subset(ihcap.gt.df, select=c("PQ45_202.GT", "PQ45_203.GT", "PQ47_304.GT", "PQ48_401.GT", "ST172_301.GT", "ST172_302.GT", "ST172_303.GT", "ST230_304.GT", "ST256_301.GT", "ST257_201.GT", "ST257_202.GT", "ST275_GE0035.GT", "ST296_GE0204.GT", "ST340_302.GT", "ST345_301.GT", "ST345_302.GT", "ST345_303.GT", "ST358_301.GT", "ST368_301.GT", "ST440_403_D72330.GT"))
+dim(gast.gt.df)
+```
+
+#Select Deleterious rare Variants
+```{r filter vv file}
+
+pass.df <- ihcap.vv.df[ihcap.vv.df$FILTER == "PASS",]
+dim(pass.df)
+
+splice_acceptor_variant <- grepl( "splice_acceptor_variant", pass.df$Consequence)
+sum(splice_acceptor_variant, na.rm=TRUE)
+
+splice_donor_variant <- grepl( "splice_donor_variant", pass.df$Consequence)
+sum(splice_donor_variant, na.rm=TRUE)
+
+stop_gain <- grepl( "stop_gain", pass.df$Consequence)
+sum(stop_gain, na.rm=TRUE)
+
+frameshift_variant <- grepl( "frameshift_variant", pass.df$Consequence)
+sum(frameshift_variant, na.rm=TRUE)
+
+stop_lost <- grepl( "stop_lost", pass.df$Consequence)
+sum(stop_lost, na.rm=TRUE)
+
+start_lost <- grepl( "start_lost", pass.df$Consequence)
+sum(start_lost, na.rm=TRUE)
+
+missense <- grepl( "missense_variant", pass.df$Consequence)
+sum(missense, na.rm=TRUE)
+
+inframe_deletion <- grepl( "inframe_deletion", pass.df$Consequence)
+sum(inframe_deletion, na.rm=TRUE)
+
+inframe_insertion <- grepl( "inframe_insertion", pass.df$Consequence)
+sum(inframe_insertion, na.rm=TRUE)
+
+high_impact_lof <- splice_acceptor_variant | splice_donor_variant | stop_gain | frameshift_variant | stop_lost | start_lost | missense | inframe_deletion | inframe_insertion
+
+sum(high_impact_lof)
+
+rm(splice_acceptor_variant, splice_donor_variant, stop_gain, frameshift_variant, stop_lost, start_lost, missense, inframe_deletion, inframe_insertion)
+
+vv.hi.lof.df <- pass.df[high_impact_lof,]
+dim(vv.hi.lof.df)
+
+```
+
+#Create merged file with gt and vv information
+```{r Check rows and select lof from gt}
+
+merged.df <- merge(vv.hi.lof.df, gast.gt.df, by=0)
+dim(merged.df)
+
+save.image(file="Gastric_fam_AC.RData")
+```
